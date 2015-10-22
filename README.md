@@ -8,5 +8,5 @@ There's a UITextField in the ViewController which sents a searchText property in
 Once the Weather object is set, properties in the ViewModel are set accordingly. Since outlets in the ViewController are bound to properties in the ViewModel, they get set automatically.
 
 
-RxSwift: https://github.com/ReactiveX/RxSwift
+RxSwift: https://github.com/ReactiveX/RxSwift  
 OpenWeatherMap: https://openweathermap.org
