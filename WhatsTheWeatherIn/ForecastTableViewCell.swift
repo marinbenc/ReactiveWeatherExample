@@ -35,12 +35,14 @@ class ForecastTableViewCell: UITableViewCell {
 			formatter.timeStyle = .ShortStyle
 			formatter.setLocalizedDateFormatFromTemplate("h a")
 			dateLabel.text = formatter.stringFromDate(forecastToShow.date)
-		
-			cityDegreesLabel.text = "\(forecastToShow.temp)°C"
+			
+			if let temp = forecastToShow.temp {
+				cityDegreesLabel.text = "\(temp)°C"
+			}
 			weatherMessageLabel.text = forecastToShow.description
 		
 			dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) { () -> Void in
-				if let data = NSData(contentsOfURL: NSURL(string: Constants.baseImageURL + forecastToShow.imageID + Constants.imageExtension)!) {
+				if let data = NSData(contentsOfURL: NSURL(string: Constants.baseImageURL + forecastToShow.imageID! + Constants.imageExtension)!) {
 					if let image = UIImage(data: data) {
 						dispatch_async(dispatch_get_main_queue()) { () -> Void in
 							self.weatherImageOutlet.image = image
