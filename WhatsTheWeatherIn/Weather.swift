@@ -7,13 +7,10 @@
 //
 
 import Foundation
-import UIKit
-import RxCocoa
-import RxSwift
+import SwiftyJSON
 
-typealias JSON = AnyObject
 typealias JSONDictionary = [String: AnyObject]
-typealias WeatherForecast = (date: NSDate, imageID: String, temp: Double, description: String)
+typealias WeatherForecast = (date: NSDate, imageID: String?, temp: Double?, description: String?)
 
 class Weather {
 	struct Constants {
@@ -34,49 +31,66 @@ class Weather {
 		}
 	}
 	
+	//TODO: Implement alamofire and error handling
+	//TODO: Cash last request
 	
 	//TODO: Implement swiftyjson
 	//Swift's JSON parsing beauty
 	init(jsonObject: AnyObject) {
-		if let cityData = jsonObject as? JSONDictionary
-		{
-			if let city = cityData["city"] as? JSONDictionary
-			{
-				if let cityName = city["name"] as? String
-				{
-					self.cityName = cityName
-					
-					if let list = cityData["list"] as? Array<AnyObject>
-					{
-						for item in list
-						{
-							if let day = item as? JSONDictionary
-							{
-								if let time = day["dt"] as? NSTimeInterval
-								{
-									if let main = day["main"] as? JSONDictionary
-									{
-										if let temp = main["temp"] as? Double
-										{
-											if let weather = day["weather"] as? Array<AnyObject>
-											{
-												if let weatherMessage = weather[0]["description"] as? String
-												{
-													if let weatherImageID = weather[0]["icon"] as? String
-													{
-														let timeOfForecast = NSDate(timeIntervalSince1970: time)
-														self.forecast.append((timeOfForecast, weatherImageID, temp, weatherMessage))
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+		let json = JSON(jsonObject)
+		
+		self.cityName = json["city"]["name"].stringValue
+		if let forecastArray = json["list"].array {
+			for item in forecastArray {
+				let itemForecast = (date: NSDate(timeIntervalSince1970: NSTimeInterval(item["dt"].intValue)),
+					imageID: item["weather"][0]["icon"].string,
+					temp: item["main"]["temp"].double,
+					description: item["weather"][0]["description"].string)
+				
+				forecast.append(itemForecast)
 			}
 		}
+		
+		
+//		if let cityData = jsonObject as? JSONDictionary
+//		{
+//			if let city = cityData["city"] as? JSONDictionary
+//			{
+//				if let cityName = city["name"] as? String
+//				{
+//					self.cityName = cityName
+//					
+//					if let list = cityData["list"] as? Array<AnyObject>
+//					{
+//						for item in list
+//						{
+//							if let day = item as? JSONDictionary
+//							{
+//								if let time = day["dt"] as? NSTimeInterval
+//								{
+//									if let main = day["main"] as? JSONDictionary
+//									{
+//										if let temp = main["temp"] as? Double
+//										{
+//											if let weather = day["weather"] as? Array<AnyObject>
+//											{
+//												if let weatherMessage = weather[0]["description"] as? String
+//												{
+//													if let weatherImageID = weather[0]["icon"] as? String
+//													{
+//														let timeOfForecast = NSDate(timeIntervalSince1970: time)
+//														self.forecast.append((timeOfForecast, weatherImageID, temp, weatherMessage))
+//													}
+//												}
+//											}
+//										}
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
 	}
 }
