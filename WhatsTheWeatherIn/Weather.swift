@@ -34,7 +34,6 @@ class Weather {
 	//TODO: Implement alamofire and error handling
 	//TODO: Cash last request
 	
-	//TODO: Implement swiftyjson
 	//Swift's JSON parsing beauty
 	init(jsonObject: AnyObject) {
 		let json = JSON(jsonObject)

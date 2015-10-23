@@ -6,6 +6,7 @@ target 'WhatsTheWeatherIn' do
 	pod 'RxCocoa', '~> 2.0.0-alpha'
 	pod 'RxBlocking', '~> 2.0.0-alpha'
 	pod 'SwiftyJSON', :git => 'https://github.com/SwiftyJSON/SwiftyJSON.git'
+	pod 'Alamofire', '~> 3.0'
 end
 
 target 'WhatsTheWeatherInTests' do

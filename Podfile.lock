@@ -1,4 +1,5 @@
 PODS:
+  - Alamofire (3.1.0)
   - RxBlocking (2.0.0-alpha.3):
     - RxSwift (~> 2.0.0-alpha)
   - RxCocoa (2.0.0-alpha.3):
@@ -7,6 +8,7 @@ PODS:
   - SwiftyJSON (2.3.0)
 
 DEPENDENCIES:
+  - Alamofire (~> 3.0)
   - RxBlocking (~> 2.0.0-alpha)
   - RxCocoa (~> 2.0.0-alpha)
   - RxSwift (~> 2.0.0-alpha)
@@ -22,6 +24,7 @@ CHECKOUT OPTIONS:
     :git: https://github.com/SwiftyJSON/SwiftyJSON.git
 
 SPEC CHECKSUMS:
+  Alamofire: 415bd7f56197722978759078486689f7ef913dce
   RxBlocking: 0a4086da64fbbc916ac0251252d93f5f4f97ce5a
   RxCocoa: 2a45f35cd0eb6a01e081b3d11849c2fcb0bdb6de
   RxSwift: c66f7956b2e5fb397a62bf4a3ec6072749a816a7
