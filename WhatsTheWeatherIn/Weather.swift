@@ -50,47 +50,5 @@ class Weather {
 				forecast.append(itemForecast)
 			}
 		}
-		
-		
-//		if let cityData = jsonObject as? JSONDictionary
-//		{
-//			if let city = cityData["city"] as? JSONDictionary
-//			{
-//				if let cityName = city["name"] as? String
-//				{
-//					self.cityName = cityName
-//					
-//					if let list = cityData["list"] as? Array<AnyObject>
-//					{
-//						for item in list
-//						{
-//							if let day = item as? JSONDictionary
-//							{
-//								if let time = day["dt"] as? NSTimeInterval
-//								{
-//									if let main = day["main"] as? JSONDictionary
-//									{
-//										if let temp = main["temp"] as? Double
-//										{
-//											if let weather = day["weather"] as? Array<AnyObject>
-//											{
-//												if let weatherMessage = weather[0]["description"] as? String
-//												{
-//													if let weatherImageID = weather[0]["icon"] as? String
-//													{
-//														let timeOfForecast = NSDate(timeIntervalSince1970: time)
-//														self.forecast.append((timeOfForecast, weatherImageID, temp, weatherMessage))
-//													}
-//												}
-//											}
-//										}
-//									}
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
 	}
 }
