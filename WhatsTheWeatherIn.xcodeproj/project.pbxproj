@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		77B3B5CDA6729873AD60200B /* Pods_WhatsTheWeatherIn.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 71A57A7854C045A9C3EDF4F7 /* Pods_WhatsTheWeatherIn.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		77B3B5CDA6729873AD60200B /* Pods_WhatsTheWeatherIn.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 71A57A7854C045A9C3EDF4F7 /* Pods_WhatsTheWeatherIn.framework */; };
 		9C1D3FB81BD29384007A2865 /* ForecastTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1D3FB71BD29384007A2865 /* ForecastTableViewCell.swift */; settings = {ASSET_TAGS = (); }; };
 		9C1D3FC31BD691D5007A2865 /* MVVMWeatherTableViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1D3FC11BD691D5007A2865 /* MVVMWeatherTableViewModel.swift */; settings = {ASSET_TAGS = (); }; };
 		9C1D3FC41BD691D5007A2865 /* MVVMWeatherTableTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1D3FC21BD691D5007A2865 /* MVVMWeatherTableTableViewController.swift */; settings = {ASSET_TAGS = (); }; };

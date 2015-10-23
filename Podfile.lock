@@ -4,15 +4,27 @@ PODS:
   - RxCocoa (2.0.0-alpha.3):
     - RxSwift (~> 2.0.0-alpha)
   - RxSwift (2.0.0-alpha.3)
+  - SwiftyJSON (2.3.0)
 
 DEPENDENCIES:
   - RxBlocking (~> 2.0.0-alpha)
   - RxCocoa (~> 2.0.0-alpha)
   - RxSwift (~> 2.0.0-alpha)
+  - SwiftyJSON (from `https://github.com/SwiftyJSON/SwiftyJSON.git`)
+
+EXTERNAL SOURCES:
+  SwiftyJSON:
+    :git: https://github.com/SwiftyJSON/SwiftyJSON.git
+
+CHECKOUT OPTIONS:
+  SwiftyJSON:
+    :commit: 83dc3138b14571200ea7f070933a2a510491e997
+    :git: https://github.com/SwiftyJSON/SwiftyJSON.git
 
 SPEC CHECKSUMS:
   RxBlocking: 0a4086da64fbbc916ac0251252d93f5f4f97ce5a
   RxCocoa: 2a45f35cd0eb6a01e081b3d11849c2fcb0bdb6de
   RxSwift: c66f7956b2e5fb397a62bf4a3ec6072749a816a7
+  SwiftyJSON: cacfe0373d584585716bd1d43202c24cc66afd65
 
-COCOAPODS: 0.38.2
+COCOAPODS: 0.39.0
