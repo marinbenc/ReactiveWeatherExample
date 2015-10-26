@@ -9,3 +9,4 @@ Once the Weather object is set, properties in the ViewModel are set accordingly.
 
 RxSwift: https://github.com/ReactiveX/RxSwift  
 OpenWeatherMap: https://openweathermap.org
+Alamofire: https://github.com/Alamofire/Alamofire
