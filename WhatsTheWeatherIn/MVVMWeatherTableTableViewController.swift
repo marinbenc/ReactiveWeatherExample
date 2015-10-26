@@ -10,10 +10,11 @@ import UIKit
 import Foundation
 import RxCocoa
 import RxSwift
+import Alamofire
 
 
 
-class MVVMWeatherTableViewController: UITableViewController {
+class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate {
 	
 	var boundToViewModel = false
 	
@@ -40,6 +41,17 @@ class MVVMWeatherTableViewController: UITableViewController {
 	@IBOutlet weak var weatherMessageLabel: UILabel!
 	@IBOutlet weak var weatherImageOutlet: UIImageView!
 	@IBOutlet weak var backgroundImageOutlet: UIImageView!
+	
+	var alertView: UIAlertView? {
+		didSet {
+			if let aV = alertView {
+				aV.delegate = self
+				aV.show()
+			}
+		}
+	}
+	
+	
 	
 	//table view header (current weather display)
 	@IBOutlet weak var weatherView: UIView! {
@@ -75,7 +87,6 @@ class MVVMWeatherTableViewController: UITableViewController {
 		}
 		
 		viewModel.tableViewData.subscribeNext { data in
-			print("data did come in")
 			self.tableViewData = data
 			self.tableView.reloadData()
 		}
@@ -83,6 +94,13 @@ class MVVMWeatherTableViewController: UITableViewController {
 		viewModel.backgroundImage.subscribeNext { image in
 			dispatch_async(dispatch_get_main_queue(), { () -> Void in
 				self.backgroundImageOutlet.image = image
+			})
+		}
+		
+		viewModel.errorAlertView.subscribeNext { view in
+			dispatch_async(dispatch_get_main_queue(), { () -> Void in
+				print(view)
+				self.alertView = view
 			})
 		}
 	}

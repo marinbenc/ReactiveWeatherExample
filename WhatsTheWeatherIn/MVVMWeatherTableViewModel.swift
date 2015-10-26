@@ -10,6 +10,8 @@ import UIKit
 import Foundation
 import RxCocoa
 import RxSwift
+import Alamofire
+import SwiftyJSON
 
 extension NSDate {
 	var dayString:String {
@@ -19,6 +21,8 @@ extension NSDate {
 	}
 }
 
+
+//TODO: Replace deprecated code
 class MVVMWeatherTableViewModel {
 	
 	struct Constants {
@@ -44,7 +48,7 @@ class MVVMWeatherTableViewModel {
 	
 	
 	
-	//MARK: UI data source
+	//MARK: UI
 	
 	var cityName = PublishSubject<String?>()
 	var degrees = PublishSubject<String?>()
@@ -53,8 +57,7 @@ class MVVMWeatherTableViewModel {
 	var weatherImage = PublishSubject<UIImage?>()
 	var backgroundImage = PublishSubject<UIImage?>()
 	var tableViewData = PublishSubject<[(String, [WeatherForecast])]>()
-	
-	
+	var errorAlertView = PublishSubject<UIAlertView>()
 	
 	func updateModel() {
 		sendNext(cityName, weather?.cityName)
@@ -71,6 +74,24 @@ class MVVMWeatherTableViewModel {
 			sendTableViewData()
 		}
 	}
+	
+	func setWeatherImageForImageID(imageID: String) {
+		dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) { () -> Void in
+			if let url = NSURL(string: Constants.baseImageURL + imageID + Constants.imageExtension) {
+				if let data = NSData(contentsOfURL: url) {
+					dispatch_async(dispatch_get_main_queue()) { () -> Void in
+						sendNext(self.weatherImage, UIImage(data: data))
+					}
+				}
+			}
+		}
+	}
+	
+	//TODO:
+	func setBackgroundImageForImageID(imageID: String) {
+	}
+	
+	
 	
 	//Parses the forecast data into an array of (date, forecasts for that day) tuple
 	func sendTableViewData() {
@@ -95,73 +116,49 @@ class MVVMWeatherTableViewModel {
 		}
 	}
 	
-	func setWeatherImageForImageID(imageID: String) {
-		dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) { () -> Void in
-			if let url = NSURL(string: Constants.baseImageURL + imageID + Constants.imageExtension) {
-				if let data = NSData(contentsOfURL: url) {
-					dispatch_async(dispatch_get_main_queue()) { () -> Void in
-						sendNext(self.weatherImage, UIImage(data: data))
-					}
-				}
-			}
-		}
-	}
-	
-	//TODO:
-	func setBackgroundImageForImageID(imageID: String) {
-	}
 	
 	
-	
-	//MARK: Lifecycle
+	//MARK: Weather fetching
 	
 	var searchText:String? {
 		didSet {
 			if let text = searchText {
-				request = just(getJsonRequest(text))
+				let urlString = Constants.baseURL + text.stringByReplacingOccurrencesOfString(" ", withString: "%20") + Constants.urlExtension
+				
+				getWeatherForRequest(urlString)
+				.subscribe(next: nil, error: { error in
+					if let gotError = error as? NSError {
+						print(gotError.domain)
+						sendNext(self.errorAlertView, UIAlertView(title: "Error \(gotError.code)",
+							message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay"))
+					}
+				})
 			}
 		}
 	}
 	
-	var request: Observable<NSURLRequest?> {
-		didSet {
-			request
-				.subscribeNext { myRequest in
-					if let r = myRequest {
-						self.json = just(NSURLSession.sharedSession().rx_JSON(r))
+	func getWeatherForRequest(urlString: String)-> Observable<String> {
+		return create { observable -> Disposable in
+			Alamofire.request(.GET, urlString)
+				.validate()
+				.responseJSON { (response) -> Void in
+					switch response.result {
+					case .Success(let json):
+						
+						let jsonForValidation = JSON(json)
+						if let error = jsonForValidation["message"].string {
+							observable.on(.Error(NSError(domain: error, code: 404, userInfo: nil)))
+							return
+						}
+						self.weather = Weather(jsonObject: json)
+						observable.on(.Next("Success"))
+					case .Failure(let error):
+						print("Got error")
+						observable.on(.Error(error))
 					}
-				}
-				.addDisposableTo(disposeBag)
-		}
-	}
-	
-	var json: Observable<AnyObject!> {
-		didSet {
-			json = request
-				.map({ myRequest in
-					return NSURLSession.sharedSession().rx_JSON(myRequest!)
-				})
-				.switchLatest()
-				.shareReplay(1)
+			}
 			
-			json
-				.subscribeNext({ json in
-					self.weather = Weather(jsonObject: json)
-				})
-				.addDisposableTo(disposeBag)
+			return AnonymousDisposable({})
 		}
-	}
-	
-	init () {
-		request = just(nil)
-		json = just("")
-		updateModel()
-	}
-	
-	func getJsonRequest(string: String)-> NSURLRequest {
-		let stringWithoutSpaces = string.stringByReplacingOccurrencesOfString(" ", withString: "%20")
-		let url = NSURL(string: Constants.baseURL + "\(stringWithoutSpaces)" + Constants.urlExtension)
-		
-		return NSURLRequest(URL: url!)
 	}
 }
