@@ -60,11 +60,11 @@ class MVVMWeatherTableViewModel {
 	var errorAlertView = PublishSubject<UIAlertView>()
 	
 	func updateModel() {
-		sendNext(cityName, weather?.cityName)
+		cityName.on(.Next(weather?.cityName))
 		if let temp = weather?.currentWeather?.temp {
-			sendNext(degrees, String(temp))
+			degrees.on(.Next(String(temp)))
 		}
-		sendNext(weatherDescription, weather?.currentWeather?.description)
+		weatherDescription.on(.Next(weather?.currentWeather?.description))
 		if let id = weather?.currentWeather?.imageID {
 			setWeatherImageForImageID(id)
 			setBackgroundImageForImageID(id)
@@ -80,7 +80,7 @@ class MVVMWeatherTableViewModel {
 			if let url = NSURL(string: Constants.baseImageURL + imageID + Constants.imageExtension) {
 				if let data = NSData(contentsOfURL: url) {
 					dispatch_async(dispatch_get_main_queue()) { () -> Void in
-						sendNext(self.weatherImage, UIImage(data: data))
+						self.weatherImage.on(.Next(UIImage(data: data)))
 					}
 				}
 			}
@@ -111,8 +111,7 @@ class MVVMWeatherTableViewModel {
 					tempForecasts.append(forecast)
 				}
 			}
-			
-			sendNext(tableViewData, Array(zip(days, forecasts)))
+			tableViewData.on(.Next(Array(zip(days, forecasts))))
 		}
 	}
 	
@@ -127,11 +126,10 @@ class MVVMWeatherTableViewModel {
 				
 				getWeatherForRequest(urlString)
 				.subscribe(next: nil, error: { error in
-					if let gotError = error as? NSError {
-						print(gotError.domain)
-						sendNext(self.errorAlertView, UIAlertView(title: "Error \(gotError.code)",
-							message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay"))
-					}
+					let gotError = error as NSError
+					
+					print(gotError.domain)
+					self.errorAlertView.on(.Next(UIAlertView(title: "\(gotError.code)", message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay")))
 				})
 			}
 		}
