@@ -124,14 +124,6 @@ class MVVMWeatherTableViewModel {
 			if let text = searchText {
 				let urlString = Constants.baseURL + text.stringByReplacingOccurrencesOfString(" ", withString: "%20") + Constants.urlExtension
 				getWeatherForRequest(urlString)
-				.subscribe(next: nil, error: { error in
-					let gotError = error as NSError
-					
-					print(gotError.domain)
-					self.errorAlertView.on(
-						.Next(UIAlertView(title: "\(gotError.code)", message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay"))
-					)
-				})
 			}
 		}
 	}
