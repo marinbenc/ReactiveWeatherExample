@@ -22,7 +22,7 @@ extension NSDate {
 }
 
 
-//TODO: Replace deprecated code
+
 class MVVMWeatherTableViewModel {
 	
 	struct Constants {
