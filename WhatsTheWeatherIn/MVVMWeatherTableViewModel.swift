@@ -123,7 +123,6 @@ class MVVMWeatherTableViewModel {
 		didSet {
 			if let text = searchText {
 				let urlString = Constants.baseURL + text.stringByReplacingOccurrencesOfString(" ", withString: "%20") + Constants.urlExtension
-				
 				getWeatherForRequest(urlString)
 			}
 		}
