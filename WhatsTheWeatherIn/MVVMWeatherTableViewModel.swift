@@ -7,11 +7,11 @@
 //
 
 import UIKit
-import Foundation
 import RxCocoa
 import RxSwift
-import Alamofire
 import SwiftyJSON
+
+import Alamofire
 
 extension NSDate {
 	var dayString:String {
@@ -22,9 +22,9 @@ extension NSDate {
 }
 
 
-//TODO: Replace deprecated code
+
 class MVVMWeatherTableViewModel {
-	
+		
 	struct Constants {
 		static let baseURL = "http://api.openweathermap.org/data/2.5/forecast?q="
 		static let urlExtension = "&units=metric&type=like&APPID=6a700a1e919dc96b0a98901c9f4bec47"
@@ -137,28 +137,38 @@ class MVVMWeatherTableViewModel {
 		}
 	}
 	
-	func getWeatherForRequest(urlString: String)-> Observable<String> {
-		return create { observable -> Disposable in
-			Alamofire.request(.GET, urlString)
-				.validate()
-				.responseJSON { (response) -> Void in
-					switch response.result {
-					case .Success(let json):
-						
-						let jsonForValidation = JSON(json)
-						if let error = jsonForValidation["message"].string {
-							observable.on(.Error(NSError(domain: error, code: 404, userInfo: nil)))
-							return
-						}
-						self.weather = Weather(jsonObject: json)
-						observable.on(.Next("Success"))
-					case .Failure(let error):
-						print("Got error")
-						observable.on(.Error(error))
-					}
-			}
-			
-			return AnonymousDisposable({})
-		}
+	func getWeatherForRequest(urlString: String) {
+		let observable = Alamofire.request(Method.GET, urlString).rx_responseJSON()
+		.observeOn(MainScheduler.sharedInstance)
+		.subscribe(
+			onNext: { json in
+				let jsonForValidation = JSON(json)
+				if let error = jsonForValidation["message"].string {
+					print("got error \(error)")
+					self.postError("Error", message: error)
+					return
+				}
+				self.weather = Weather(jsonObject: json)
+
+				},
+			onError: { error in
+				print("Got error")
+				let gotError = error as NSError
+				
+				print(gotError.domain)
+				self.postError("\(gotError.code)", message: gotError.domain)
+			})
+		.addDisposableTo(disposeBag)
 	}
+	
+	func postError(title: String, message: String) {
+		errorAlertView.on(.Next(UIAlertView(title: title,
+			message: message,
+			delegate: nil,
+			cancelButtonTitle: "Okay")))
+	}
+
+
+
+
 }

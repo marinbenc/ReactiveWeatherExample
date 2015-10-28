@@ -70,7 +70,7 @@ class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate
 		super.viewDidLoad()
 		
 		cityTextField.rx_text
-			.debounce(0.3, scheduler: MainScheduler.sharedInstance)
+			.debounce(0.3, MainScheduler.sharedInstance)
 			
 			.subscribeNext { searchText in
 				self.viewModel.searchText = searchText
@@ -85,17 +85,20 @@ class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate
 		viewModel.weatherImage.subscribeNext { image in
 			self.weatherImageOutlet.image = image
 		}
+		.addDisposableTo(disposeBag)
 		
 		viewModel.tableViewData.subscribeNext { data in
 			self.tableViewData = data
 			self.tableView.reloadData()
 		}
+		.addDisposableTo(disposeBag)
 		
 		viewModel.backgroundImage.subscribeNext { image in
 			dispatch_async(dispatch_get_main_queue(), { () -> Void in
 				self.backgroundImageOutlet.image = image
 			})
 		}
+		.addDisposableTo(disposeBag)
 		
 		viewModel.errorAlertView.subscribeNext { view in
 			dispatch_async(dispatch_get_main_queue(), { () -> Void in
@@ -103,6 +106,7 @@ class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate
 				self.alertView = view
 			})
 		}
+		.addDisposableTo(disposeBag)
 	}
 	
 	
