@@ -129,7 +129,9 @@ class MVVMWeatherTableViewModel {
 					let gotError = error as NSError
 					
 					print(gotError.domain)
-					self.errorAlertView.on(.Next(UIAlertView(title: "\(gotError.code)", message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay")))
+					self.errorAlertView.on(
+						.Next(UIAlertView(title: "\(gotError.code)", message: gotError.domain, delegate: nil, cancelButtonTitle: "Okay"))
+					)
 				})
 			}
 		}
