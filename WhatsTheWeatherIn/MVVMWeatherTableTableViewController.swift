@@ -41,17 +41,15 @@ class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate
 	@IBOutlet weak var weatherMessageLabel: UILabel!
 	@IBOutlet weak var weatherImageOutlet: UIImageView!
 	@IBOutlet weak var backgroundImageOutlet: UIImageView!
-	
-	var alertView: UIAlertView? {
-		didSet {
-			if let aV = alertView {
-				aV.delegate = self
-				aV.show()
-			}
-		}
-	}
-	
-	
+		
+    var alertController: UIAlertController? {
+        didSet {
+            if let alertController = alertController {
+                alertController.addAction(UIAlertAction(title: "Ok", style: .Default, handler: nil))
+                presentViewController(alertController, animated: true, completion: nil)
+            }
+        }
+    }
 	
 	//table view header (current weather display)
 	@IBOutlet weak var weatherView: UIView! {
@@ -100,16 +98,14 @@ class MVVMWeatherTableViewController: UITableViewController, UIAlertViewDelegate
 		}
 		.addDisposableTo(disposeBag)
 		
-		viewModel.errorAlertView.subscribeNext { view in
-			dispatch_async(dispatch_get_main_queue(), { () -> Void in
-				print(view)
-				self.alertView = view
-			})
-		}
-		.addDisposableTo(disposeBag)
+        viewModel.errorAlertController.subscribeNext { alertController in
+            dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                self.alertController = alertController
+            })
+        }
+        .addDisposableTo(disposeBag)
+		
 	}
-	
-	
 	
 	//MARK: Table view data source
 	

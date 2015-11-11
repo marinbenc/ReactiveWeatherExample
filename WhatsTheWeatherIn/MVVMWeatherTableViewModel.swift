@@ -21,8 +21,6 @@ extension NSDate {
 	}
 }
 
-
-
 class MVVMWeatherTableViewModel {
 		
 	struct Constants {
@@ -33,9 +31,7 @@ class MVVMWeatherTableViewModel {
 	}
 	
 	var disposeBag = DisposeBag()
-	
-	
-	
+
 	//MARK: Model
 	
 	var weather: Weather? {
@@ -46,8 +42,6 @@ class MVVMWeatherTableViewModel {
 		}
 	}
 	
-	
-	
 	//MARK: UI
 	
 	var cityName = PublishSubject<String?>()
@@ -57,7 +51,7 @@ class MVVMWeatherTableViewModel {
 	var weatherImage = PublishSubject<UIImage?>()
 	var backgroundImage = PublishSubject<UIImage?>()
 	var tableViewData = PublishSubject<[(String, [WeatherForecast])]>()
-	var errorAlertView = PublishSubject<UIAlertView>()
+    var errorAlertController = PublishSubject<UIAlertController>()
 	
 	func updateModel() {
 		cityName.on(.Next(weather?.cityName))
@@ -129,7 +123,7 @@ class MVVMWeatherTableViewModel {
 	}
 	
 	func getWeatherForRequest(urlString: String) {
-		let observable = Alamofire.request(Method.GET, urlString).rx_responseJSON()
+        Alamofire.request(Method.GET, urlString).rx_responseJSON()
 		.observeOn(MainScheduler.sharedInstance)
 		.subscribe(
 			onNext: { json in
@@ -153,13 +147,7 @@ class MVVMWeatherTableViewModel {
 	}
 	
 	func postError(title: String, message: String) {
-		errorAlertView.on(.Next(UIAlertView(title: title,
-			message: message,
-			delegate: nil,
-			cancelButtonTitle: "Okay")))
+        errorAlertController.on(.Next(UIAlertController(title: title, message: message, preferredStyle: .Alert)))
 	}
-
-
-
 
 }
