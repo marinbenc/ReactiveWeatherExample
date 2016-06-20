@@ -3,7 +3,7 @@
 //  RxSwift
 //
 //  Created by Krunoslav Zaher on 4/19/15.
-//  Copyright (c) 2015 Krunoslav Zaher. All rights reserved.
+//  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
 import Foundation
@@ -95,7 +95,9 @@ class Catch<Element> : Producer<Element> {
 
 // catch enumerable
 
-class CatchSequenceSink<S: SequenceType, O: ObserverType where S.Generator.Element : ObservableConvertibleType, S.Generator.Element.E == O.E> : TailRecursiveSink<S, O> {
+class CatchSequenceSink<S: SequenceType, O: ObserverType where S.Generator.Element : ObservableConvertibleType, S.Generator.Element.E == O.E>
+    : TailRecursiveSink<S, O>
+    , ObserverType {
     typealias Element = O.E
     typealias Parent = CatchSequence<S>
     
@@ -105,17 +107,21 @@ class CatchSequenceSink<S: SequenceType, O: ObserverType where S.Generator.Eleme
         super.init(observer: observer)
     }
     
-    override func on(event: Event<Element>) {
+    func on(event: Event<Element>) {
         switch event {
         case .Next:
             forwardOn(event)
         case .Error(let error):
             _lastError = error
-            scheduleMoveNext()
+            schedule(.MoveNext)
         case .Completed:
             forwardOn(event)
             dispose()
         }
+    }
+
+    override func subscribeToNext(source: Observable<E>) -> Disposable {
+        return source.subscribe(self)
     }
     
     override func done() {
@@ -129,9 +135,9 @@ class CatchSequenceSink<S: SequenceType, O: ObserverType where S.Generator.Eleme
         self.dispose()
     }
     
-    override func extract(observable: Observable<Element>) -> S.Generator? {
+    override func extract(observable: Observable<Element>) -> SequenceGenerator? {
         if let onError = observable as? CatchSequence<S> {
-            return onError.sources.generate()
+            return (onError.sources.generate(), nil)
         }
         else {
             return nil
@@ -150,7 +156,7 @@ class CatchSequence<S: SequenceType where S.Generator.Element : ObservableConver
     
     override func run<O : ObserverType where O.E == Element>(observer: O) -> Disposable {
         let sink = CatchSequenceSink<S, O>(observer: observer)
-        sink.disposable = sink.run(self.sources.generate())
+        sink.disposable = sink.run((self.sources.generate(), nil))
         return sink
     }
 }

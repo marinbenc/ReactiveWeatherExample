@@ -3,7 +3,7 @@
 //  Rx
 //
 //  Created by Krunoslav Zaher on 2/28/15.
-//  Copyright (c) 2015 Krunoslav Zaher. All rights reserved.
+//  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
 import Foundation
@@ -41,9 +41,7 @@ public struct AnyObserver<Element> : ObserverType {
     - parameter observer: Observer that receives sequence events.
     */
     public init<O : ObserverType where O.E == Element>(_ observer: O) {
-        self.observer = { e in
-            return observer.on(e)
-        }
+        self.observer = observer.on
     }
     
     /**
@@ -54,6 +52,15 @@ public struct AnyObserver<Element> : ObserverType {
     public func on(event: Event<Element>) {
         return self.observer(event)
     }
+
+    /**
+     Erases type of observer and returns canonical observer.
+
+     - returns: type erased observer.
+     */
+    public func asObserver() -> AnyObserver<E> {
+        return self
+    }
 }
 
 extension ObserverType {
@@ -62,7 +69,7 @@ extension ObserverType {
     
     - returns: type erased observer.
     */
-    func asObserver() -> AnyObserver<E> {
+    public func asObserver() -> AnyObserver<E> {
         return AnyObserver(self)
     }
 }

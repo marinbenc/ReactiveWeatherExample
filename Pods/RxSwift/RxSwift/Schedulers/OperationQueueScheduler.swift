@@ -3,13 +3,13 @@
 //  Rx
 //
 //  Created by Krunoslav Zaher on 4/4/15.
-//  Copyright (c) 2015 Krunoslav Zaher. All rights reserved.
+//  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
 import Foundation
 
 /**
-Abstracts the work that needs to be peformed on a specific `NSOperationQueue`.
+Abstracts the work that needs to be performed on a specific `NSOperationQueue`.
 
 This scheduler is suitable for cases when there is some bigger chunk of work that needs to be performed in background and you want to fine tune concurrent processing using `maxConcurrentOperationCount`.
 */

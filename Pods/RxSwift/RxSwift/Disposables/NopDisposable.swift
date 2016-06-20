@@ -3,7 +3,7 @@
 //  Rx
 //
 //  Created by Krunoslav Zaher on 2/15/15.
-//  Copyright (c) 2015 Krunoslav Zaher. All rights reserved.
+//  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
 import Foundation
@@ -13,7 +13,7 @@ Represents a disposable that does nothing on disposal.
 
 Nop = No Operation
 */
-public class NopDisposable : Disposable {
+public struct NopDisposable : Disposable {
  
     /**
     Singleton instance of `NopDisposable`.

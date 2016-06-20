@@ -9,43 +9,57 @@
 import Foundation
 import SwiftyJSON
 
-typealias JSONDictionary = [String: AnyObject]
-typealias WeatherForecast = (date: NSDate, imageID: String?, temp: Double?, description: String?)
+struct Forecast {
+    
+    let date: NSDate
+    let imageID: String
+    let temp: Float
+    let description: String
+    
+    init?(json: JSON) {
+        
+        guard let
+            timestamp = json["dt"].double,
+            imageID = json["weather"][0]["icon"].string,
+            temp = json["main"]["temp"].float,
+            description = json["weather"][0]["description"].string
+        else {
+            return nil
+        }
+        
+        self.date = NSDate(timeIntervalSince1970: timestamp)
+        self.imageID = imageID
+        self.temp = temp
+        self.description = description
+    }
+}
 
-class Weather {
-	struct Constants {
-		static let baseURL = "http://api.openweathermap.org/data/2.5/forecast?q="
-		static let urlParams = "&units=metric&type=like&APPID=6a700a1e919dc96b0a98901c9f4bec47"
-		static let baseImageURL = "http://openweathermap.org/img/w/"
-		static let imageExtension = ".png"
+struct Weather {
+	
+	let cityName: String
+    let forecasts: [Forecast]
+	
+	var currentWeather: Forecast {
+        //forecasts will never be empty, see init
+        return forecasts[0]
 	}
 	
-	var cityName:String?
-	var forecast = [WeatherForecast]()
-	
-	var currentWeather:WeatherForecast? {
-		if !forecast.isEmpty {
-			return forecast[0]
-		} else {
-			return nil
-		}
-	}
-	
-	//TODO: Cash last request
-	
-	init(jsonObject: AnyObject) {
-		let json = JSON(jsonObject)
+	init?(json: JSON) {
+        
+        guard let
+            cityName = json["city"]["name"].string,
+            forecastData = json["list"].array
+        else {
+            return nil
+        }
 		
-		self.cityName = json["city"]["name"].stringValue
-		if let forecastArray = json["list"].array {
-			for item in forecastArray {
-				let itemForecast = (date: NSDate(timeIntervalSince1970: NSTimeInterval(item["dt"].intValue)),
-					imageID: item["weather"][0]["icon"].string,
-					temp: item["main"]["temp"].double,
-					description: item["weather"][0]["description"].string)
-				
-				forecast.append(itemForecast)
-			}
-		}
+		self.cityName = cityName
+        
+        let forecasts = forecastData.flatMap(Forecast.init)
+        guard !forecasts.isEmpty else {
+            return nil
+        }
+        
+        self.forecasts = forecasts
 	}
 }
