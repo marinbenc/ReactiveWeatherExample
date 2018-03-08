@@ -1,89 +1,106 @@
 //
 //  Event.swift
-//  Rx
+//  RxSwift
 //
 //  Created by Krunoslav Zaher on 2/8/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
+/// Represents a sequence event.
+///
+/// Sequence grammar: 
+/// **next\* (error | completed)**
+public enum Event<Element> {
+    /// Next element is produced.
+    case next(Element)
 
+    /// Sequence terminated with an error.
+    case error(Swift.Error)
 
-/**
-Represents sequence event
-
-Sequence grammar:
-Next\* (Error | Completed)
-*/
-public enum Event<Element> : CustomDebugStringConvertible {
-    /**
-    Next element is produced
-    */
-    case Next(Element)
-    
-    /**
-    Sequence terminates with error
-    */
-    case Error(ErrorType)
-    
-    /**
-    Sequence completes sucessfully
-    */
-    case Completed
+    /// Sequence completed successfully.
+    case completed
 }
 
-extension Event {
-    /**
-    - returns: Description of event
-    */
+extension Event : CustomDebugStringConvertible {
+    /// - returns: Description of event.
     public var debugDescription: String {
-        get {
-            switch self {
-            case .Next(let value):
-                return "Next(\(value))"
-            case .Error(let error):
-                return "Error(\(error))"
-            case .Completed:
-                return "Completed"
-            }
+        switch self {
+        case .next(let value):
+            return "next(\(value))"
+        case .error(let error):
+            return "error(\(error))"
+        case .completed:
+            return "completed"
         }
     }
 }
 
 extension Event {
-    /**
-    - returns: Is `Completed` or `Error` event
-    */
+    /// Is `completed` or `error` event.
     public var isStopEvent: Bool {
-        get {
-            switch self {
-            case .Next: return false
-            case .Error, .Completed: return true
-            }
+        switch self {
+        case .next: return false
+        case .error, .completed: return true
         }
     }
-    
-    /**
-    - returns: If `Next` event, returns element value.
-    */
+
+    /// If `next` event, returns element value.
     public var element: Element? {
-        get {
-            if case .Next(let value) = self {
-                return value
+        if case .next(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    /// If `error` event, returns error.
+    public var error: Swift.Error? {
+        if case .error(let error) = self {
+            return error
+        }
+        return nil
+    }
+
+    /// If `completed` event, returns true.
+    public var isCompleted: Bool {
+        if case .completed = self {
+            return true
+        }
+        return false
+    }
+}
+
+extension Event {
+    /// Maps sequence elements using transform. If error happens during the transform .error
+    /// will be returned as value
+    public func map<Result>(_ transform: (Element) throws -> Result) -> Event<Result> {
+        do {
+            switch self {
+            case let .next(element):
+                return .next(try transform(element))
+            case let .error(error):
+                return .error(error)
+            case .completed:
+                return .completed
             }
-            return nil
+        }
+        catch let e {
+            return .error(e)
         }
     }
-    
-    /**
-    - returns: If `Error` event, returns error.
-    */
-    public var error: ErrorType? {
-        get {
-            if case .Error(let error) = self {
-                return error
-            }
-            return nil
-        }
+}
+
+/// A type that can be converted to `Event<Element>`.
+public protocol EventConvertible {
+    /// Type of element in event
+    associatedtype ElementType
+
+    /// Event representation of this instance
+    var event: Event<ElementType> { get }
+}
+
+extension Event : EventConvertible {
+    /// Event representation of this instance
+    public var event: Event<Element> {
+        return self
     }
 }

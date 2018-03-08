@@ -8,92 +8,83 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 import UIKit
+    
+extension UIScrollView: HasDelegate {
+    public typealias Delegate = UIScrollViewDelegate
+}
 
-/**
-     For more information take a look at `DelegateProxyType`.
-*/
-public class RxScrollViewDelegateProxy
-    : DelegateProxy
-    , UIScrollViewDelegate
-    , DelegateProxyType {
+/// For more information take a look at `DelegateProxyType`.
+open class RxScrollViewDelegateProxy
+    : DelegateProxy<UIScrollView, UIScrollViewDelegate>
+    , DelegateProxyType 
+    , UIScrollViewDelegate {
 
-    private var _contentOffsetSubject: ReplaySubject<CGPoint>?
-
-    /**
-     Typed parent object.
-     */
+    /// Typed parent object.
     public weak private(set) var scrollView: UIScrollView?
 
-    /**
-     Optimized version used for observing content offset changes.
-    */
-    internal var contentOffsetSubject: Observable<CGPoint> {
-        if _contentOffsetSubject == nil {
-            let replaySubject = ReplaySubject<CGPoint>.create(bufferSize: 1)
-            _contentOffsetSubject = replaySubject
-            replaySubject.on(.Next(self.scrollView?.contentOffset ?? CGPointZero))
-        }
-        
-        return _contentOffsetSubject!
+    /// - parameter scrollView: Parent object for delegate proxy.
+    public init(scrollView: ParentObject) {
+        self.scrollView = scrollView
+        super.init(parentObject: scrollView, delegateProxy: RxScrollViewDelegateProxy.self)
     }
 
-    /**
-     Initializes `RxScrollViewDelegateProxy`
+    // Register known implementations
+    public static func registerKnownImplementations() {
+        self.register { RxScrollViewDelegateProxy(scrollView: $0) }
+        self.register { RxTableViewDelegateProxy(tableView: $0) }
+        self.register { RxCollectionViewDelegateProxy(collectionView: $0) }
+        self.register { RxTextViewDelegateProxy(textView: $0) }
+    }
 
-     - parameter parentObject: Parent object for delegate proxy.
-     */
-    public required init(parentObject: AnyObject) {
-        self.scrollView = (parentObject as! UIScrollView)
-        super.init(parentObject: parentObject)
+    fileprivate var _contentOffsetBehaviorSubject: BehaviorSubject<CGPoint>?
+    fileprivate var _contentOffsetPublishSubject: PublishSubject<()>?
+
+    /// Optimized version used for observing content offset changes.
+    internal var contentOffsetBehaviorSubject: BehaviorSubject<CGPoint> {
+        if let subject = _contentOffsetBehaviorSubject {
+            return subject
+        }
+
+        let subject = BehaviorSubject<CGPoint>(value: self.scrollView?.contentOffset ?? CGPoint.zero)
+        _contentOffsetBehaviorSubject = subject
+
+        return subject
+    }
+
+    /// Optimized version used for observing content offset changes.
+    internal var contentOffsetPublishSubject: PublishSubject<()> {
+        if let subject = _contentOffsetPublishSubject {
+            return subject
+        }
+
+        let subject = PublishSubject<()>()
+        _contentOffsetPublishSubject = subject
+
+        return subject
     }
     
     // MARK: delegate methods
 
-    /**
-    For more information take a look at `DelegateProxyType`.
-    */
-    public func scrollViewDidScroll(scrollView: UIScrollView) {
-        if let contentOffset = _contentOffsetSubject {
-            contentOffset.on(.Next(scrollView.contentOffset))
+    /// For more information take a look at `DelegateProxyType`.
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if let subject = _contentOffsetBehaviorSubject {
+            subject.on(.next(scrollView.contentOffset))
+        }
+        if let subject = _contentOffsetPublishSubject {
+            subject.on(.next(()))
         }
         self._forwardToDelegate?.scrollViewDidScroll?(scrollView)
     }
     
-    // MARK: delegate proxy
-
-    /**
-    For more information take a look at `DelegateProxyType`.
-    */
-    public override class func createProxyForObject(object: AnyObject) -> AnyObject {
-        let scrollView = (object as! UIScrollView)
-        
-        return castOrFatalError(scrollView.rx_createDelegateProxy())
-    }
-
-    /**
-     For more information take a look at `DelegateProxyType`.
-     */
-    public class func setCurrentDelegate(delegate: AnyObject?, toObject object: AnyObject) {
-        let collectionView: UIScrollView = castOrFatalError(object)
-        collectionView.delegate = castOptionalOrFatalError(delegate)
-    }
-
-    /**
-     For more information take a look at `DelegateProxyType`.
-     */
-    public class func currentDelegateFor(object: AnyObject) -> AnyObject? {
-        let collectionView: UIScrollView = castOrFatalError(object)
-        return collectionView.delegate
-    }
-    
     deinit {
-        if let contentOffset = _contentOffsetSubject {
-            contentOffset.on(.Completed)
+        if let subject = _contentOffsetBehaviorSubject {
+            subject.on(.completed)
+        }
+
+        if let subject = _contentOffsetPublishSubject {
+            subject.on(.completed)
         }
     }
 }

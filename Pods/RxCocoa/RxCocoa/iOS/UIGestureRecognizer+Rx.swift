@@ -1,6 +1,6 @@
 //
 //  UIGestureRecognizer+Rx.swift
-//  Touches
+//  RxCocoa
 //
 //  Created by Carlos García on 10/6/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
@@ -9,36 +9,33 @@
 #if os(iOS) || os(tvOS)
 
 import UIKit
-#if !RX_NO_MODULE
 import RxSwift
-#endif
-
 
 // This should be only used from `MainScheduler`
-class GestureTarget: RxTarget {
-    typealias Callback = (UIGestureRecognizer) -> Void
+final class GestureTarget<Recognizer: UIGestureRecognizer>: RxTarget {
+    typealias Callback = (Recognizer) -> Void
     
-    let selector = Selector("eventHandler:")
+    let selector = #selector(ControlTarget.eventHandler(_:))
     
-    weak var gestureRecognizer: UIGestureRecognizer?
+    weak var gestureRecognizer: Recognizer?
     var callback: Callback?
     
-    init(_ gestureRecognizer: UIGestureRecognizer, callback: Callback) {
+    init(_ gestureRecognizer: Recognizer, callback: @escaping Callback) {
         self.gestureRecognizer = gestureRecognizer
         self.callback = callback
         
         super.init()
         
         gestureRecognizer.addTarget(self, action: selector)
-        
-        let method = self.methodForSelector(selector)
+
+        let method = self.method(for: selector)
         if method == nil {
             fatalError("Can't find method")
         }
     }
     
-    func eventHandler(sender: UIGestureRecognizer!) {
-        if let callback = self.callback, gestureRecognizer = self.gestureRecognizer {
+    @objc func eventHandler(_ sender: UIGestureRecognizer) {
+        if let callback = self.callback, let gestureRecognizer = self.gestureRecognizer {
             callback(gestureRecognizer)
         }
     }
@@ -51,27 +48,25 @@ class GestureTarget: RxTarget {
     }
 }
 
-extension UIGestureRecognizer {
+extension Reactive where Base: UIGestureRecognizer {
     
-    /**
-    Reactive wrapper for gesture recognizer events.
-    */
-    public var rx_event: ControlEvent<UIGestureRecognizer> {
-        let source: Observable<UIGestureRecognizer> = Observable.create { [weak self] observer in
+    /// Reactive wrapper for gesture recognizer events.
+    public var event: ControlEvent<Base> {
+        let source: Observable<Base> = Observable.create { [weak control = self.base] observer in
             MainScheduler.ensureExecutingOnScheduler()
 
-            guard let control = self else {
-                observer.on(.Completed)
-                return NopDisposable.instance
+            guard let control = control else {
+                observer.on(.completed)
+                return Disposables.create()
             }
             
             let observer = GestureTarget(control) {
                 control in
-                observer.on(.Next(control))
+                observer.on(.next(control))
             }
             
             return observer
-        }.takeUntil(rx_deallocated)
+        }.takeUntil(deallocated)
         
         return ControlEvent(events: source)
     }

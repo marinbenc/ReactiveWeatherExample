@@ -1,35 +1,25 @@
 //
 //  RefCountDisposable.swift
-//  Rx
+//  RxSwift
 //
 //  Created by Junior B. on 10/29/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
-
-/**
-    Represents a disposable resource that only disposes its underlying disposable resource when all dependent disposable objects have been disposed.
- */
-public class RefCountDisposable : DisposeBase, Cancelable {
+/// Represents a disposable resource that only disposes its underlying disposable resource when all dependent disposable objects have been disposed.
+public final class RefCountDisposable : DisposeBase, Cancelable {
     private var _lock = SpinLock()
     private var _disposable = nil as Disposable?
     private var _primaryDisposed = false
     private var _count = 0
 
-    /**
-     - returns: Was resource disposed.
-     */
-    public var disposed: Bool {
-        get {
-            _lock.lock(); defer { _lock.unlock() }
-            return _disposable == nil
-        }
+    /// - returns: Was resource disposed.
+    public var isDisposed: Bool {
+        _lock.lock(); defer { _lock.unlock() }
+        return _disposable == nil
     }
 
-    /**
-     Initializes a new instance of the `RefCountDisposable`.
-     */
+    /// Initializes a new instance of the `RefCountDisposable`.
     public init(disposable: Disposable) {
         _disposable = disposable
         super.init()
@@ -45,24 +35,22 @@ public class RefCountDisposable : DisposeBase, Cancelable {
             if let _ = _disposable {
 
                 do {
-                    try incrementChecked(&_count)
+                    let _ = try incrementChecked(&_count)
                 } catch (_) {
                     rxFatalError("RefCountDisposable increment failed")
                 }
 
                 return RefCountInnerDisposable(self)
             } else {
-                return NopDisposable.instance
+                return Disposables.create()
             }
         }
     }
 
-    /**
-     Disposes the underlying disposable only when all dependent disposables have been disposed.
-     */
+    /// Disposes the underlying disposable only when all dependent disposables have been disposed.
     public func dispose() {
         let oldDisposable: Disposable? = _lock.calculateLocked {
-            if let oldDisposable = _disposable where !_primaryDisposed
+            if let oldDisposable = _disposable, !_primaryDisposed
             {
                 _primaryDisposed = true
 
@@ -81,11 +69,11 @@ public class RefCountDisposable : DisposeBase, Cancelable {
         }
     }
 
-    private func release() {
+    fileprivate func release() {
         let oldDisposable: Disposable? = _lock.calculateLocked {
             if let oldDisposable = _disposable {
                 do {
-                    try decrementChecked(&_count)
+                    let _ = try decrementChecked(&_count)
                 } catch (_) {
                     rxFatalError("RefCountDisposable decrement on release failed")
                 }
@@ -112,7 +100,7 @@ public class RefCountDisposable : DisposeBase, Cancelable {
 internal final class RefCountInnerDisposable: DisposeBase, Disposable
 {
     private let _parent: RefCountDisposable
-    private var _disposed: AtomicInt = 0
+    private var _isDisposed: AtomicInt = 0
 
     init(_ parent: RefCountDisposable)
     {
@@ -122,7 +110,7 @@ internal final class RefCountInnerDisposable: DisposeBase, Disposable
 
     internal func dispose()
     {
-        if AtomicCompareAndSwap(0, 1, &_disposed) {
+        if AtomicCompareAndSwap(0, 1, &_isDisposed) {
             _parent.release()
         }
     }

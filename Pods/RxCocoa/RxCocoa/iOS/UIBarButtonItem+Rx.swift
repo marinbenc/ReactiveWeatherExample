@@ -9,67 +9,61 @@
 #if os(iOS) || os(tvOS)
 
 import UIKit
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 
-extension UIBarButtonItem {
+fileprivate var rx_tap_key: UInt8 = 0
+
+extension Reactive where Base: UIBarButtonItem {
     
-	/**
-	Bindable sink for `enabled` property.
-	*/
-	public var rx_enabled: AnyObserver<Bool> {
-		return AnyObserver { [weak self] event in
-			MainScheduler.ensureExecutingOnScheduler()
-			
-			switch event {
-			case .Next(let value):
-				self?.enabled = value
-			case .Error(let error):
-				bindingErrorToInterface(error)
-				break
-			case .Completed:
-				break
-			}
-		}
-	}
-	
-    /**
-    Reactive wrapper for target action pattern on `self`.
-    */
-    public var rx_tap: ControlEvent<Void> {
-        let source: Observable<Void> = Observable.create { [weak self] observer in
+    /// Bindable sink for `enabled` property.
+    public var isEnabled: Binder<Bool> {
+        return Binder(self.base) { element, value in
+            element.isEnabled = value
+        }
+    }
+    
+    /// Bindable sink for `title` property.
+    public var title: Binder<String> {
+        return Binder(self.base) { element, value in
+            element.title = value
+        }
+    }
 
-            guard let control = self else {
-                observer.on(.Completed)
-                return NopDisposable.instance
+    /// Reactive wrapper for target action pattern on `self`.
+    public var tap: ControlEvent<()> {
+        let source = lazyInstanceObservable(&rx_tap_key) { () -> Observable<()> in
+            Observable.create { [weak control = self.base] observer in
+                guard let control = control else {
+                    observer.on(.completed)
+                    return Disposables.create()
+                }
+                let target = BarButtonItemTarget(barButtonItem: control) {
+                    observer.on(.next(()))
+                }
+                return target
             }
-
-            let target = BarButtonItemTarget(barButtonItem: control) {
-                observer.on(.Next())
-            }
-            return target
-        }.takeUntil(rx_deallocated)
+            .takeUntil(self.deallocated)
+            .share()
+        }
         
         return ControlEvent(events: source)
     }
-    
 }
 
 
 @objc
-class BarButtonItemTarget: RxTarget {
+final class BarButtonItemTarget: RxTarget {
     typealias Callback = () -> Void
     
     weak var barButtonItem: UIBarButtonItem?
     var callback: Callback!
     
-    init(barButtonItem: UIBarButtonItem, callback: () -> Void) {
+    init(barButtonItem: UIBarButtonItem, callback: @escaping () -> Void) {
         self.barButtonItem = barButtonItem
         self.callback = callback
         super.init()
         barButtonItem.target = self
-        barButtonItem.action = Selector("action:")
+        barButtonItem.action = #selector(BarButtonItemTarget.action(_:))
     }
     
     override func dispose() {
@@ -84,7 +78,7 @@ class BarButtonItemTarget: RxTarget {
         callback = nil
     }
     
-    func action(sender: AnyObject) {
+    @objc func action(_ sender: AnyObject) {
         callback()
     }
     

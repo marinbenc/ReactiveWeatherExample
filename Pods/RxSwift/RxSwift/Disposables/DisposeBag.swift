@@ -1,21 +1,17 @@
 //
 //  DisposeBag.swift
-//  Rx
+//  RxSwift
 //
 //  Created by Krunoslav Zaher on 3/25/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
-
 extension Disposable {
-    /**
-    Adds `self` to `bag`.
-    
-    - parameter bag: `DisposeBag` to add `self` to.
-    */
-    public func addDisposableTo(bag: DisposeBag) {
-        bag.addDisposable(self)
+    /// Adds `self` to `bag`
+    ///
+    /// - parameter bag: `DisposeBag` to add `self` to.
+    public func disposed(by bag: DisposeBag) {
+        bag.insert(self)
     }
 }
 
@@ -24,40 +20,36 @@ Thread safe bag that disposes added disposables on `deinit`.
 
 This returns ARC (RAII) like resource management to `RxSwift`.
 
-In case contained disposables need to be disposed, just deference dispose bag
-or create new one in it's place.
+In case contained disposables need to be disposed, just put a different dispose bag
+or create a new one in its place.
 
     self.existingDisposeBag = DisposeBag()
 
 In case explicit disposal is necessary, there is also `CompositeDisposable`.
 */
-public class DisposeBag: DisposeBase {
+public final class DisposeBag: DisposeBase {
     
     private var _lock = SpinLock()
     
     // state
     private var _disposables = [Disposable]()
-    private var _disposed = false
+    private var _isDisposed = false
     
-    /**
-    Constructs new empty dispose bag.
-    */
+    /// Constructs new empty dispose bag.
     public override init() {
         super.init()
     }
     
-    /**
-    Adds `disposable` to be disposed when dispose bag is being deinited.
-    
-    - parameter disposable: Disposable to add.
-    */
-    public func addDisposable(disposable: Disposable) {
-        _addDisposable(disposable)?.dispose()
+    /// Adds `disposable` to be disposed when dispose bag is being deinited.
+    ///
+    /// - parameter disposable: Disposable to add.
+    public func insert(_ disposable: Disposable) {
+        _insert(disposable)?.dispose()
     }
-
-    private func _addDisposable(disposable: Disposable) -> Disposable? {
+    
+    private func _insert(_ disposable: Disposable) -> Disposable? {
         _lock.lock(); defer { _lock.unlock() }
-        if _disposed {
+        if _isDisposed {
             return disposable
         }
 
@@ -66,9 +58,7 @@ public class DisposeBag: DisposeBase {
         return nil
     }
 
-    /**
-    This is internal on purpose, take a look at `CompositeDisposable` instead.
-    */
+    /// This is internal on purpose, take a look at `CompositeDisposable` instead.
     private func dispose() {
         let oldDisposables = _dispose()
 
@@ -82,8 +72,8 @@ public class DisposeBag: DisposeBase {
 
         let disposables = _disposables
         
-        _disposables.removeAll(keepCapacity: false)
-        _disposed = true
+        _disposables.removeAll(keepingCapacity: false)
+        _isDisposed = true
         
         return disposables
     }

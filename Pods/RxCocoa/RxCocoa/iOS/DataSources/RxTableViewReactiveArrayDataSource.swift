@@ -8,84 +8,90 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
 import UIKit
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 
 // objc monkey business
-class _RxTableViewReactiveArrayDataSource: NSObject, UITableViewDataSource {
+class _RxTableViewReactiveArrayDataSource
+    : NSObject
+    , UITableViewDataSource {
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
    
-    func _tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func _tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 0
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return _tableView(tableView, numberOfRowsInSection: section)
     }
 
-    func _tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    fileprivate func _tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         rxAbstractMethod()
     }
-    
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        return _tableView(tableView, cellForRowAtIndexPath: indexPath)
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        return _tableView(tableView, cellForRowAt: indexPath)
     }
 }
 
 
-class RxTableViewReactiveArrayDataSourceSequenceWrapper<S: SequenceType> : RxTableViewReactiveArrayDataSource<S.Generator.Element>
-                                                                         , RxTableViewDataSourceType {
+class RxTableViewReactiveArrayDataSourceSequenceWrapper<S: Sequence>
+    : RxTableViewReactiveArrayDataSource<S.Iterator.Element>
+    , RxTableViewDataSourceType {
     typealias Element = S
 
-    override init(cellFactory: CellFactory) {
+    override init(cellFactory: @escaping CellFactory) {
         super.init(cellFactory: cellFactory)
     }
-    
-    func tableView(tableView: UITableView, observedEvent: Event<S>) {
-        switch observedEvent {
-        case .Next(let value):
-            super.tableView(tableView, observedElements: Array(value))
-        case .Error(let error):
-            bindingErrorToInterface(error)
-        case .Completed:
-            break
-        }
+
+    func tableView(_ tableView: UITableView, observedEvent: Event<S>) {
+        Binder(self) { tableViewDataSource, sectionModels in
+            let sections = Array(sectionModels)
+            tableViewDataSource.tableView(tableView, observedElements: sections)
+        }.on(observedEvent)
     }
 }
 
 // Please take a look at `DelegateProxyType.swift`
-class RxTableViewReactiveArrayDataSource<Element> : _RxTableViewReactiveArrayDataSource {
+class RxTableViewReactiveArrayDataSource<Element>
+    : _RxTableViewReactiveArrayDataSource
+    , SectionedViewDataSourceType {
     typealias CellFactory = (UITableView, Int, Element) -> UITableViewCell
     
     var itemModels: [Element]? = nil
     
-    func modelAtIndex(index: Int) -> Element? {
+    func modelAtIndex(_ index: Int) -> Element? {
         return itemModels?[index]
     }
-    
+
+    func model(at indexPath: IndexPath) throws -> Any {
+        precondition(indexPath.section == 0)
+        guard let item = itemModels?[indexPath.item] else {
+            throw RxCocoaError.itemsNotYetBound(object: self)
+        }
+        return item
+    }
+
     let cellFactory: CellFactory
     
-    init(cellFactory: CellFactory) {
+    init(cellFactory: @escaping CellFactory) {
         self.cellFactory = cellFactory
     }
     
-    override func _tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func _tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemModels?.count ?? 0
     }
     
-    override func _tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    override func _tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         return cellFactory(tableView, indexPath.item, itemModels![indexPath.row])
     }
     
     // reactive
     
-    func tableView(tableView: UITableView, observedElements: [Element]) {
+    func tableView(_ tableView: UITableView, observedElements: [Element]) {
         self.itemModels = observedElements
         
         tableView.reloadData()
