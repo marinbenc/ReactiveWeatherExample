@@ -11,7 +11,8 @@ import Foundation
 extension String {
     
     var withPercentEncodedSpaces: String {
-        return self.stringByReplacingOccurrencesOfString(" ", withString: "%20")
+        return self.replacingOccurrences(of: " ", with: "%20")
+        //return self.stringByReplacingOccurrencesOfString(" ", withString: "%20")
     }
     
 }
