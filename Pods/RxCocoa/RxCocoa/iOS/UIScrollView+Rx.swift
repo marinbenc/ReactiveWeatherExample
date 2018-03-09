@@ -8,63 +8,131 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
-#if !RX_NO_MODULE
-import RxSwift
-#endif
-import UIKit
+    import RxSwift
+    import UIKit
 
-extension UIScrollView {
-    
-    /**
-    Factory method that enables subclasses to implement their own `rx_delegate`.
-    
-    - returns: Instance of delegate proxy that wraps `delegate`.
-    */
-    public func rx_createDelegateProxy() -> RxScrollViewDelegateProxy {
-        return RxScrollViewDelegateProxy(parentObject: self)
-    }
-    
-    /**
-    Reactive wrapper for `delegate`.
-    
-    For more information take a look at `DelegateProxyType` protocol documentation.
-    */
-    public var rx_delegate: DelegateProxy {
-        return proxyForObject(RxScrollViewDelegateProxy.self, self)
-    }
-    
-    /**
-    Reactive wrapper for `contentOffset`.
-    */
-    public var rx_contentOffset: ControlProperty<CGPoint> {
-        let proxy = proxyForObject(RxScrollViewDelegateProxy.self, self)
+    extension Reactive where Base: UIScrollView {
+        public typealias EndZoomEvent = (view: UIView?, scale: CGFloat)
+        public typealias WillEndDraggingEvent = (velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>)
+
+        /// Reactive wrapper for `delegate`.
+        ///
+        /// For more information take a look at `DelegateProxyType` protocol documentation.
+        public var delegate: DelegateProxy<UIScrollView, UIScrollViewDelegate> {
+            return RxScrollViewDelegateProxy.proxy(for: base)
+        }
         
-        return ControlProperty(values: proxy.contentOffsetSubject, valueSink: AnyObserver { [weak self] event in
-            switch event {
-            case .Next(let value):
-                self?.contentOffset = value
-            case .Error(let error):
-                bindingErrorToInterface(error)
-            case .Completed:
-                break
+        /// Reactive wrapper for `contentOffset`.
+        public var contentOffset: ControlProperty<CGPoint> {
+            let proxy = RxScrollViewDelegateProxy.proxy(for: base)
+
+            let bindingObserver = Binder(self.base) { scrollView, contentOffset in
+                scrollView.contentOffset = contentOffset
             }
-        })
+
+            return ControlProperty(values: proxy.contentOffsetBehaviorSubject, valueSink: bindingObserver)
+        }
+
+        /// Bindable sink for `scrollEnabled` property.
+        public var isScrollEnabled: Binder<Bool> {
+            return Binder(self.base) { scrollView, scrollEnabled in
+                scrollView.isScrollEnabled = scrollEnabled
+            }
+        }
+
+        /// Reactive wrapper for delegate method `scrollViewDidScroll`
+        public var didScroll: ControlEvent<Void> {
+            let source = RxScrollViewDelegateProxy.proxy(for: base).contentOffsetPublishSubject
+            return ControlEvent(events: source)
+        }
+        
+        /// Reactive wrapper for delegate method `scrollViewWillBeginDecelerating`
+        public var willBeginDecelerating: ControlEvent<Void> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewWillBeginDecelerating(_:))).map { _ in }
+            return ControlEvent(events: source)
+        }
+    	
+    	/// Reactive wrapper for delegate method `scrollViewDidEndDecelerating`
+    	public var didEndDecelerating: ControlEvent<Void> {
+    		let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidEndDecelerating(_:))).map { _ in }
+    		return ControlEvent(events: source)
+    	}
+    	
+        /// Reactive wrapper for delegate method `scrollViewWillBeginDragging`
+        public var willBeginDragging: ControlEvent<Void> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewWillBeginDragging(_:))).map { _ in }
+            return ControlEvent(events: source)
+        }
+        
+        /// Reactive wrapper for delegate method `scrollViewWillEndDragging(_:withVelocity:targetContentOffset:)`
+        public var willEndDragging: ControlEvent<WillEndDraggingEvent> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewWillEndDragging(_:withVelocity:targetContentOffset:)))
+                .map { value -> WillEndDraggingEvent in
+                    let velocity = try castOrThrow(CGPoint.self, value[1])
+                    let targetContentOffsetValue = try castOrThrow(NSValue.self, value[2])
+
+                    guard let rawPointer = targetContentOffsetValue.pointerValue else { throw RxCocoaError.unknown }
+                    let typedPointer = rawPointer.bindMemory(to: CGPoint.self, capacity: MemoryLayout<CGPoint>.size)
+
+                    return (velocity, typedPointer)
+            }
+            return ControlEvent(events: source)
+        }
+        
+    	/// Reactive wrapper for delegate method `scrollViewDidEndDragging(_:willDecelerate:)`
+        public var didEndDragging: ControlEvent<Bool> {
+    		let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidEndDragging(_:willDecelerate:))).map { value -> Bool in
+    			return try castOrThrow(Bool.self, value[1])
+    		}
+    		return ControlEvent(events: source)
+    	}
+
+        /// Reactive wrapper for delegate method `scrollViewDidZoom`
+        public var didZoom: ControlEvent<Void> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidZoom)).map { _ in }
+            return ControlEvent(events: source)
+        }
+
+
+        /// Reactive wrapper for delegate method `scrollViewDidScrollToTop`
+        public var didScrollToTop: ControlEvent<Void> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidScrollToTop(_:))).map { _ in }
+            return ControlEvent(events: source)
+        }
+        
+        /// Reactive wrapper for delegate method `scrollViewDidEndScrollingAnimation`
+        public var didEndScrollingAnimation: ControlEvent<Void> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidEndScrollingAnimation(_:))).map { _ in }
+            return ControlEvent(events: source)
+        }
+        
+        /// Reactive wrapper for delegate method `scrollViewWillBeginZooming(_:with:)`
+        public var willBeginZooming: ControlEvent<UIView?> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewWillBeginZooming(_:with:))).map { value -> UIView? in
+                return try castOptionalOrThrow(UIView.self, value[1] as AnyObject)
+            }
+            return ControlEvent(events: source)
+        }
+        
+        /// Reactive wrapper for delegate method `scrollViewDidEndZooming(_:with:atScale:)`
+        public var didEndZooming: ControlEvent<EndZoomEvent> {
+            let source = delegate.methodInvoked(#selector(UIScrollViewDelegate.scrollViewDidEndZooming(_:with:atScale:))).map { value -> EndZoomEvent in
+                return (try castOptionalOrThrow(UIView.self, value[1] as AnyObject), try castOrThrow(CGFloat.self, value[2]))
+            }
+            return ControlEvent(events: source)
+        }
+
+        /// Installs delegate as forwarding delegate on `delegate`.
+        /// Delegate won't be retained.
+        ///
+        /// It enables using normal delegate mechanism with reactive delegate mechanism.
+        ///
+        /// - parameter delegate: Delegate object.
+        /// - returns: Disposable object that can be used to unbind the delegate.
+        public func setDelegate(_ delegate: UIScrollViewDelegate)
+            -> Disposable {
+            return RxScrollViewDelegateProxy.installForwardDelegate(delegate, retainDelegate: false, onProxyForObject: self.base)
+        }
     }
-    
-    /**
-    Installs delegate as forwarding delegate on `rx_delegate`.
-    
-    It enables using normal delegate mechanism with reactive delegate mechanism.
-    
-    - parameter delegate: Delegate object.
-    - returns: Disposable object that can be used to unbind the delegate.
-    */
-    public func rx_setDelegate(delegate: UIScrollViewDelegate)
-        -> Disposable {
-        let proxy = proxyForObject(RxScrollViewDelegateProxy.self, self)
-        return installDelegate(proxy, delegate: delegate, retainDelegate: false, onProxyForObject: self)
-    }
-}
 
 #endif

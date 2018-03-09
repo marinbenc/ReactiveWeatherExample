@@ -8,50 +8,117 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 import UIKit
 
+extension Reactive where Base: UISearchBar {
 
+    /// Reactive wrapper for `delegate`.
+    ///
+    /// For more information take a look at `DelegateProxyType` protocol documentation.
+    public var delegate: DelegateProxy<UISearchBar, UISearchBarDelegate> {
+        return RxSearchBarDelegateProxy.proxy(for: base)
+    }
 
-extension UISearchBar {
-    
-    /**
-    Reactive wrapper for `delegate`.
-    
-    For more information take a look at `DelegateProxyType` protocol documentation.
-    */
-    public var rx_delegate: DelegateProxy {
-        return proxyForObject(RxSearchBarDelegateProxy.self, self)
+    /// Reactive wrapper for `text` property.
+    public var text: ControlProperty<String?> {
+        return value
     }
     
-    /**
-    Reactive wrapper for `text` property.
-    */
-    public var rx_text: ControlProperty<String> {
-        let source: Observable<String> = Observable.deferred { [weak self] () -> Observable<String> in
-            let text = self?.text ?? ""
+    /// Reactive wrapper for `text` property.
+    public var value: ControlProperty<String?> {
+        let source: Observable<String?> = Observable.deferred { [weak searchBar = self.base as UISearchBar] () -> Observable<String?> in
+            let text = searchBar?.text
             
-            return (self?.rx_delegate.observe("searchBar:textDidChange:") ?? Observable.empty())
+            return (searchBar?.rx.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBar(_:textDidChange:))) ?? Observable.empty())
                     .map { a in
-                        return a[1] as? String ?? ""
+                        return a[1] as? String
                     }
                     .startWith(text)
         }
+
+        let bindingObserver = Binder(self.base) { (searchBar, text: String?) in
+            searchBar.text = text
+        }
         
-        return ControlProperty(values: source, valueSink: AnyObserver { [weak self] event in
-            switch event {
-            case .Next(let value):
-                self?.text = value
-            case .Error(let error):
-                bindingErrorToInterface(error)
-            case .Completed:
-                break
-            }
-        })
+        return ControlProperty(values: source, valueSink: bindingObserver)
     }
+    
+    /// Reactive wrapper for `selectedScopeButtonIndex` property.
+    public var selectedScopeButtonIndex: ControlProperty<Int> {
+        let source: Observable<Int> = Observable.deferred { [weak source = self.base as UISearchBar] () -> Observable<Int> in
+            let index = source?.selectedScopeButtonIndex ?? 0
+            
+            return (source?.rx.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBar(_:selectedScopeButtonIndexDidChange:))) ?? Observable.empty())
+                .map { a in
+                    return try castOrThrow(Int.self, a[1])
+                }
+                .startWith(index)
+        }
+        
+        let bindingObserver = Binder(self.base) { (searchBar, index: Int) in
+            searchBar.selectedScopeButtonIndex = index
+        }
+        
+        return ControlProperty(values: source, valueSink: bindingObserver)
+    }
+    
+#if os(iOS)
+    /// Reactive wrapper for delegate method `searchBarCancelButtonClicked`.
+    public var cancelButtonClicked: ControlEvent<Void> {
+        let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarCancelButtonClicked(_:)))
+            .map { _ in
+                return ()
+            }
+        return ControlEvent(events: source)
+    }
+
+	/// Reactive wrapper for delegate method `searchBarBookmarkButtonClicked`.
+	public var bookmarkButtonClicked: ControlEvent<Void> {
+		let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarBookmarkButtonClicked(_:)))
+			.map { _ in
+				return ()
+			}
+		return ControlEvent(events: source)
+	}
+
+	/// Reactive wrapper for delegate method `searchBarResultsListButtonClicked`.
+	public var resultsListButtonClicked: ControlEvent<Void> {
+		let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarResultsListButtonClicked(_:)))
+			.map { _ in
+				return ()
+		}
+		return ControlEvent(events: source)
+	}
+#endif
+	
+    /// Reactive wrapper for delegate method `searchBarSearchButtonClicked`.
+    public var searchButtonClicked: ControlEvent<Void> {
+        let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarSearchButtonClicked(_:)))
+            .map { _ in
+                return ()
+        }
+        return ControlEvent(events: source)
+    }
+	
+	/// Reactive wrapper for delegate method `searchBarTextDidBeginEditing`.
+	public var textDidBeginEditing: ControlEvent<Void> {
+		let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarTextDidBeginEditing(_:)))
+			.map { _ in
+				return ()
+		}
+		return ControlEvent(events: source)
+	}
+	
+	/// Reactive wrapper for delegate method `searchBarTextDidEndEditing`.
+	public var textDidEndEditing: ControlEvent<Void> {
+		let source: Observable<Void> = self.delegate.methodInvoked(#selector(UISearchBarDelegate.searchBarTextDidEndEditing(_:)))
+			.map { _ in
+				return ()
+		}
+		return ControlEvent(events: source)
+	}
+	
 }
 
 #endif

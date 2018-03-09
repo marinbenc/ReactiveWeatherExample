@@ -15,7 +15,7 @@ final class WeatherViewModel {
     
     private let weatherService: WeatherAPIService
     private let disposeBag = DisposeBag()
-    private let formatter = NSDateFormatter()
+    private let formatter = DateFormatter()
     
     
     //MARK: - Model
@@ -32,7 +32,7 @@ final class WeatherViewModel {
     let temp: Observable<String>
     
     ///The data for a small image (e.g. clouds) representing the current weather
-    let weatherImageData: Observable<NSData>
+    let weatherImageData: Observable<Data>
     
     ///Background image to display for a certain current weather
     let weatherBackgroundImage: Observable<WeatherBackgroundImage>
@@ -74,13 +74,13 @@ final class WeatherViewModel {
                 return weatherService.search(withCity: searchString)
             }
             //make sure all subscribers use the same exact subscription
-            .shareReplay(1)
+            .share(replay: 1)
         
         
         //Initialise observers
         
         cityName = weather
-            .map { $0.cityName ?? "" }
+            .map { $0.cityName }
         
         temp = weather
             .map { "\($0.currentWeather.temp)" }
@@ -105,13 +105,13 @@ final class WeatherViewModel {
         
         //There's probably a better way to write this.
         
-        func dateTimestampFromDate(date: NSDate)-> String {
+        func dateTimestampFromDate(date: Date)-> String {
             formatter.dateFormat = "YYMMdd HHmm"
-            return formatter.stringFromDate(date)
+            return formatter.string(from: date)
         }
         
         func dayTimestampFromDateTimstamp(timestamp: String)-> String {
-            return String(timestamp.characters.split(" ")[0])
+            return String(timestamp.split(separator: " ")[0])
         }
         
         let allTimestamps = weather.forecasts
@@ -124,8 +124,8 @@ final class WeatherViewModel {
         
         let forecastsForDays = uniqueDayTimestamps.map { day in
             return weather.forecasts.filter { forecast in
-                let forecastTimestamp = dateTimestampFromDate(forecast.date)
-                let dayOfForecast = dayTimestampFromDateTimstamp(forecastTimestamp)
+                let forecastTimestamp = dateTimestampFromDate(date: forecast.date)
+                let dayOfForecast = dayTimestampFromDateTimstamp(timestamp: forecastTimestamp)
                 
                 return dayOfForecast == day
             }
@@ -136,16 +136,16 @@ final class WeatherViewModel {
         }
         
         let dayStrings = weather.forecasts
-            .map { $0.date.dayOfWeek(formatter) }
+            .map { $0.date.dayOfWeek(formatter: formatter) }
             .uniqueElements
         
         //Combine those two Arrays into an Array of tuples
-        return Array(Zip2Sequence(dayStrings, forecastModels))
+        return Array( zip(dayStrings, forecastModels))
     }
     
     private func forecastModel(from forecast: Forecast)-> ForecastModel {
         return ForecastModel(
-            time: forecast.date.formattedTime(formatter),
+            time: forecast.date.formattedTime(formatter: formatter),
             description: forecast.description,
             temp: "\(forecast.temp)C")
     }

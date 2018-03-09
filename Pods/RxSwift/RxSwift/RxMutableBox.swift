@@ -6,34 +6,22 @@
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
-
-/**
-Creates mutable reference wrapper for any type.
-*/
-class RxMutableBox<T> : CustomDebugStringConvertible {
-    /**
-    Wrapped value
-    */
+/// Creates mutable reference wrapper for any type.
+final class RxMutableBox<T> : CustomDebugStringConvertible {
+    /// Wrapped value
     var value : T
     
-    /**
-    Creates reference wrapper for `value`.
-    
-    - parameter value: Value to wrap.
-    */
+    /// Creates reference wrapper for `value`.
+    ///
+    /// - parameter value: Value to wrap.
     init (_ value: T) {
         self.value = value
     }
 }
 
 extension RxMutableBox {
-    /**
-    - returns: Box description.
-    */
+    /// - returns: Box description.
     var debugDescription: String {
-        get {
-            return "MutatingBox(\(self.value))"
-        }
+        return "MutatingBox(\(self.value))"
     }
 }

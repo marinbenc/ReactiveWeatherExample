@@ -1,15 +1,12 @@
 //
 //  BlockingObservable.swift
-//  Rx
+//  RxBlocking
 //
 //  Created by Krunoslav Zaher on 10/19/15.
 //  Copyright © 2015 Krunoslav Zaher. All rights reserved.
 //
 
-import Foundation
-#if !RX_NO_MODULE
-    import RxSwift
-#endif
+import RxSwift
 
 /**
 `BlockingObservable` is a variety of `Observable` that provides blocking operators. 
@@ -20,5 +17,6 @@ If you think you need to use a `BlockingObservable` this is usually a sign that 
 design.
 */
 public struct BlockingObservable<E> {
+    let timeout: RxTimeInterval?
     let source: Observable<E>
 }

@@ -52,35 +52,40 @@ final class WeatherOverviewViewController: UIViewController {
     
     private func addBindsToViewModel(viewModel: WeatherViewModel) {
         
-        cityTextField.rx_text
-            .bindTo(viewModel.searchText)
-            .addDisposableTo(disposeBag)
+
         
+        cityTextField.rx.text
+        .orEmpty
+        .bind(to:viewModel.searchText)
+        .disposed(by: disposeBag)
+        
+
         viewModel.cityName
-            .bindTo(cityNameLabel.rx_text)
-            .addDisposableTo(disposeBag)
+            .bind(to: cityNameLabel.rx.text)
+            .disposed(by: disposeBag)
         
         viewModel.temp
-            .bindTo(cityDegreesLabel.rx_text)
-            .addDisposableTo(disposeBag)
+            .bind(to: cityDegreesLabel.rx.text)
+            .disposed(by: disposeBag)
         
         viewModel.weatherDescription
-            .bindTo(weatherMessageLabel.rx_text)
-            .addDisposableTo(disposeBag)
+            .bind(to: weatherMessageLabel.rx.text)
+            .disposed(by: disposeBag)
         
         viewModel.weatherImageData
-            .map(UIImage.init)
-            .bindTo(weatherIconImageView.rx_image)
-            .addDisposableTo(disposeBag)
+            .map{UIImage.init(data: $0 as Data)}
+            .bind(to: weatherIconImageView.rx.image)
+            .disposed(by: disposeBag)
         
         viewModel.weatherBackgroundImage
             .map { $0.image }
-            .bindTo(weatherBackgroundImageView.rx_image)
-            .addDisposableTo(disposeBag)
-        
+            .bind(to: weatherBackgroundImageView.rx.image)
+            .disposed(by: disposeBag)
+
         viewModel.cellData
-            .bindTo(forecastsTableView.rx_itemsWithDataSource(self))
-            .addDisposableTo(disposeBag)
+            .bind(to: forecastsTableView.rx.items(dataSource:self))
+            .disposed(by: disposeBag)
+
     }
 	
 	override func viewDidLoad() {
@@ -89,7 +94,7 @@ final class WeatherOverviewViewController: UIViewController {
         forecastsTableView.delegate = self
         
         viewModel = WeatherViewModel(weatherService: WeatherAPIService())
-		addBindsToViewModel(viewModel)
+        addBindsToViewModel(viewModel: viewModel)
     }
     
     override func viewDidLayoutSubviews() {
@@ -119,35 +124,39 @@ final class WeatherOverviewViewController: UIViewController {
 //MARK: - Table View Data Source & Delegate
 extension WeatherOverviewViewController: UITableViewDataSource, RxTableViewDataSourceType {
     
+    typealias Element = [(day: String, forecasts: [ForecastModel])]
+  
     //Gets called on tableView.rx_elements.bindTo methods
-    func tableView(tableView: UITableView, observedEvent: Event<[(day: String, forecasts: [ForecastModel])]>) {
+    func tableView(_ tableView: UITableView, observedEvent: Event<Element>) -> Void{
         
         switch observedEvent {
-        case .Next(let items):
+        case .next(let items):
             tableViewData = items
-        case .Error(let error):
+        case .error(let error):
             print(error)
             presentError()
-        case .Completed:
+        case .completed:
             tableViewData = nil
         }
     }
     
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
         return tableViewData?.count ?? 0
     }
     
-    func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        
         return tableViewData?[section].day
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return tableViewData?[section].forecasts.count ?? 0
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCellWithIdentifier("forecastCell", forIndexPath: indexPath) as! ForecastTableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "forecastCell", for: indexPath ) as! ForecastTableViewCell
         
         guard let forecast = tableViewData?[indexPath.section].forecasts[indexPath.row] else {
             return cell

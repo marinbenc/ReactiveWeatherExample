@@ -12,9 +12,9 @@ extension UIViewController {
     
     ///Presents a UIAlertController with a prefedined error message
     func presentError() {
-        let alertController = UIAlertController(title: Text.Dialogues.errorTitle, message: Text.Dialogues.errorMessage, preferredStyle: .Alert)
-        let okayAction = UIAlertAction(title: Text.Dialogues.okayText, style: .Default, handler: nil)
+        let alertController = UIAlertController(title: Text.Dialogues.errorTitle, message: Text.Dialogues.errorMessage, preferredStyle: .alert)
+        let okayAction = UIAlertAction(title: Text.Dialogues.okayText, style: .default, handler: nil)
         alertController.addAction(okayAction)
-        presentViewController(alertController, animated: true, completion: nil)
+        present(alertController, animated: true, completion: nil)
     }
 }

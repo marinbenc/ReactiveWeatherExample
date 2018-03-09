@@ -8,24 +8,31 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
 import UIKit
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 
-class RxSearchBarDelegateProxy : DelegateProxy
-                               , UISearchBarDelegate
-                               , DelegateProxyType {
-    
-    class func currentDelegateFor(object: AnyObject) -> AnyObject? {
-        let searchBar: UISearchBar = castOrFatalError(object)
-        return searchBar.delegate
+extension UISearchBar: HasDelegate {
+    public typealias Delegate = UISearchBarDelegate
+}
+
+/// For more information take a look at `DelegateProxyType`.
+open class RxSearchBarDelegateProxy
+    : DelegateProxy<UISearchBar, UISearchBarDelegate>
+    , DelegateProxyType 
+    , UISearchBarDelegate {
+
+    /// Typed parent object.
+    public weak private(set) var searchBar: UISearchBar?
+
+    /// - parameter searchBar: Parent object for delegate proxy.
+    public init(searchBar: ParentObject) {
+        self.searchBar = searchBar
+        super.init(parentObject: searchBar, delegateProxy: RxSearchBarDelegateProxy.self)
     }
-    
-    class func setCurrentDelegate(delegate: AnyObject?, toObject object: AnyObject) {
-        let searchBar: UISearchBar = castOrFatalError(object)
-        searchBar.delegate = castOptionalOrFatalError(delegate)
+
+    // Register known implementations
+    public static func registerKnownImplementations() {
+        self.register { RxSearchBarDelegateProxy(searchBar: $0) }
     }
 }
 

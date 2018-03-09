@@ -8,95 +8,95 @@
 
 #if os(iOS) || os(tvOS)
 
-import Foundation
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 import UIKit
 
-extension UIControl {
+extension Reactive where Base: UIControl {
     
-    /**
-    Bindable sink for `enabled` property.
-    */
-    public var rx_enabled: AnyObserver<Bool> {
-        return AnyObserver { [weak self] event in
-            MainScheduler.ensureExecutingOnScheduler()
-            
-            switch event {
-            case .Next(let value):
-                self?.enabled = value
-            case .Error(let error):
-                bindingErrorToInterface(error)
-                break
-            case .Completed:
-                break
-            }
+    /// Bindable sink for `enabled` property.
+    public var isEnabled: Binder<Bool> {
+        return Binder(self.base) { control, value in
+            control.isEnabled = value
         }
     }
 
-    /**
-    Reactive wrapper for target action pattern.
-    
-    - parameter controlEvents: Filter for observed event types.
-    */
-    public func rx_controlEvent(controlEvents: UIControlEvents) -> ControlEvent<Void> {
-        let source: Observable<Void> = Observable.create { [weak self] observer in
-            MainScheduler.ensureExecutingOnScheduler()
+    /// Bindable sink for `selected` property.
+    public var isSelected: Binder<Bool> {
+        return Binder(self.base) { control, selected in
+            control.isSelected = selected
+        }
+    }
 
-            guard let control = self else {
-                observer.on(.Completed)
-                return NopDisposable.instance
-            }
+    /// Reactive wrapper for target action pattern.
+    ///
+    /// - parameter controlEvents: Filter for observed event types.
+    public func controlEvent(_ controlEvents: UIControlEvents) -> ControlEvent<()> {
+        let source: Observable<Void> = Observable.create { [weak control = self.base] observer in
+                MainScheduler.ensureExecutingOnScheduler()
 
-            let controlTarget = ControlTarget(control: control, controlEvents: controlEvents) {
-                control in
-                observer.on(.Next())
+                guard let control = control else {
+                    observer.on(.completed)
+                    return Disposables.create()
+                }
+
+                let controlTarget = ControlTarget(control: control, controlEvents: controlEvents) {
+                    control in
+                    observer.on(.next(()))
+                }
+
+                return Disposables.create(with: controlTarget.dispose)
             }
-            
-            return AnonymousDisposable {
-                controlTarget.dispose()
-            }
-        }.takeUntil(rx_deallocated)
-        
+            .takeUntil(deallocated)
+
         return ControlEvent(events: source)
     }
 
-    func rx_value<T: Equatable>(getter getter: () -> T, setter: T -> Void) -> ControlProperty<T> {
-        let source: Observable<T> = Observable.create { [weak self] observer in
-            guard let control = self else {
-                observer.on(.Completed)
-                return NopDisposable.instance
-            }
+    /// Creates a `ControlProperty` that is triggered by target/action pattern value updates.
+    ///
+    /// - parameter controlEvents: Events that trigger value update sequence elements.
+    /// - parameter getter: Property value getter.
+    /// - parameter setter: Property value setter.
+    public func controlProperty<T>(
+        editingEvents: UIControlEvents,
+        getter: @escaping (Base) -> T,
+        setter: @escaping (Base, T) -> ()
+    ) -> ControlProperty<T> {
+        let source: Observable<T> = Observable.create { [weak weakControl = base] observer in
+                guard let control = weakControl else {
+                    observer.on(.completed)
+                    return Disposables.create()
+                }
 
-            observer.on(.Next(getter()))
+                observer.on(.next(getter(control)))
 
-            let controlTarget = ControlTarget(control: control, controlEvents: [.AllEditingEvents, .ValueChanged]) { control in
-                observer.on(.Next(getter()))
+                let controlTarget = ControlTarget(control: control, controlEvents: editingEvents) { _ in
+                    if let control = weakControl {
+                        observer.on(.next(getter(control)))
+                    }
+                }
+                
+                return Disposables.create(with: controlTarget.dispose)
             }
-            
-            return AnonymousDisposable {
-                controlTarget.dispose()
-            }
-        }
-            .distinctUntilChanged()
-            .takeUntil(rx_deallocated)
-        
-        return ControlProperty<T>(values: source, valueSink: AnyObserver { event in
-            MainScheduler.ensureExecutingOnScheduler()
+            .takeUntil(deallocated)
 
-            switch event {
-            case .Next(let value):
-                setter(value)
-            case .Error(let error):
-                bindingErrorToInterface(error)
-                break
-            case .Completed:
-                break
-            }
-        })
+        let bindingObserver = Binder(base, binding: setter)
+
+        return ControlProperty<T>(values: source, valueSink: bindingObserver)
     }
 
+    /// This is a separate method is to better communicate to public consumers that
+    /// an `editingEvent` needs to fire for control property to be updated.
+    internal func controlPropertyWithDefaultEvents<T>(
+        editingEvents: UIControlEvents = [.allEditingEvents, .valueChanged],
+        getter: @escaping (Base) -> T,
+        setter: @escaping (Base, T) -> ()
+        ) -> ControlProperty<T> {
+        return controlProperty(
+            editingEvents: [.allEditingEvents, .valueChanged],
+            getter: getter,
+            setter: setter
+        )
+    }
 }
 
 #endif

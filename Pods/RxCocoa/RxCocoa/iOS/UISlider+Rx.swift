@@ -8,23 +8,20 @@
 
 #if os(iOS)
 
-import Foundation
-#if !RX_NO_MODULE
 import RxSwift
-#endif
 import UIKit
 
-extension UISlider {
+extension Reactive where Base: UISlider {
     
-    /**
-    Reactive wrapper for `value` property.
-    */
-    public var rx_value: ControlProperty<Float> {
-        return rx_value(getter: { [weak self] in
-            self?.value ?? 0.0
-        }, setter: { [weak self] value in
-            self?.value = value
-        })
+    /// Reactive wrapper for `value` property.
+    public var value: ControlProperty<Float> {
+        return base.rx.controlPropertyWithDefaultEvents(
+            getter: { slider in
+                slider.value
+            }, setter: { slider, value in
+                slider.value = value
+            }
+        )
     }
     
 }

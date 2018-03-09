@@ -11,7 +11,7 @@ import SwiftyJSON
 
 struct Forecast {
     
-    let date: NSDate
+    let date: Date
     let imageID: String
     let temp: Float
     let description: String
@@ -20,14 +20,14 @@ struct Forecast {
         
         guard let
             timestamp = json["dt"].double,
-            imageID = json["weather"][0]["icon"].string,
-            temp = json["main"]["temp"].float,
-            description = json["weather"][0]["description"].string
+            let imageID = json["weather"][0]["icon"].string,
+            let temp = json["main"]["temp"].float,
+            let description = json["weather"][0]["description"].string
         else {
             return nil
         }
         
-        self.date = NSDate(timeIntervalSince1970: timestamp)
+        self.date = Date(timeIntervalSince1970: timestamp)
         self.imageID = imageID
         self.temp = temp
         self.description = description
@@ -48,7 +48,7 @@ struct Weather {
         
         guard let
             cityName = json["city"]["name"].string,
-            forecastData = json["list"].array
+            let forecastData = json["list"].array
         else {
             return nil
         }
